@@ -152,25 +152,37 @@ st.markdown(
     <style>
     .stApp { background: #f5f7f4; color: #142018; }
     /* Keep page content below Streamlit's fixed Community Cloud toolbar. */
-    .block-container { max-width: 1160px; padding-top: 4.5rem; padding-bottom: 4rem; }
+    .block-container { max-width: 1160px; padding-top: 3.5rem; padding-bottom: 3rem; }
     h1, h2, h3 { letter-spacing: -0.035em; }
     .brand { display:block; font-size: 1.05rem; line-height:1.35; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #194f36; }
     .hero { padding: 4.5rem 3.5rem; border-radius: 28px; background: linear-gradient(125deg,#102b20 0%,#1b5940 68%,#8bbd44 145%); color: white; margin: 1.2rem 0 2rem; }
     .hero h1 { font-size: clamp(2.7rem,6vw,5.4rem); line-height: .98; max-width: 850px; color: white; margin: .4rem 0 1.4rem; }
     .hero p { font-size: 1.16rem; line-height: 1.65; max-width: 680px; color: #e4eee8; }
     .eyebrow { color: #79b947; font-weight: 750; text-transform: uppercase; letter-spacing: .13em; font-size: .78rem; }
-    .trainer-card { min-height: 205px; background: white; border: 1px solid #dfe7e1; border-radius: 18px; padding: 1.4rem; margin-bottom: .65rem; box-shadow: 0 8px 26px rgba(25,50,35,.05); }
-    .trainer-card h3 { margin: .3rem 0; }
+    .trainer-card { min-height: 178px; background: white; border: 1px solid #dfe7e1; border-radius: 18px; padding: 1.25rem; margin:.25rem 0 .45rem; box-shadow: 0 8px 26px rgba(25,50,35,.05); }
+    .trainer-head { display:flex; align-items:center; gap:.85rem; margin-bottom:.8rem; }
+    .trainer-card h3 { margin:0 0 .12rem; font-size:1.18rem; }
+    .avatar { width:48px; height:48px; flex:0 0 48px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#1b6947; color:white; font-weight:800; letter-spacing:.04em; }
+    .avatar.large { width:72px; height:72px; flex-basis:72px; font-size:1.25rem; }
+    .card-skills { color:#2d4939; font-weight:600; margin:.65rem 0 .5rem; }
+    .card-rating { color:#1b6947; font-weight:750; }
     .tag { display: inline-block; background: #edf4eb; color: #28573c; padding: .28rem .62rem; border-radius: 20px; margin: .15rem .1rem; font-size: .78rem; }
     .muted { color: #66736b; font-size: .9rem; }
     .score { color: #1b6947; font-weight: 800; font-size: 1.6rem; }
     .verified { display:inline-block; background:#dff1e4; color:#155b3b; border:1px solid #b9ddc4; padding:.32rem .7rem; border-radius:20px; font-size:.8rem; font-weight:750; }
+    .profile-hero { background:white; border:1px solid #dfe7e1; border-radius:22px; padding:1.5rem; margin:.5rem 0 1.2rem; }
+    .profile-title { display:flex; gap:1rem; align-items:center; }
+    .profile-title h1 { margin:.05rem 0 .35rem; font-size:clamp(2rem,5vw,3.25rem); }
+    .profile-meta { color:#536158; margin:.6rem 0 0; }
+    .detail-block { background:white; border:1px solid #e2e9e3; border-radius:16px; padding:1rem 1.1rem; margin:.4rem 0; }
+    .detail-block h3 { font-size:1rem; margin:0 0 .55rem; }
     .admin-card { background:white; border:1px solid #dfe7e1; border-radius:16px; padding:1rem 1.15rem; margin:.45rem 0; }
     .admin-card h3 { margin:.15rem 0 .25rem; font-size:1.08rem; }
     .admin-line { color:#536158; font-size:.88rem; margin:.2rem 0; }
     .profile-ok { color:#17613f; font-weight:750; }
     .profile-todo { color:#8a5a18; font-weight:750; }
-    div.stButton > button { border-radius: 10px; min-height: 2.8rem; font-weight: 700; }
+    div.stButton > button { border-radius: 10px; min-height: 2.8rem; font-weight: 700; border-color:#b8c9bd; }
+    div.stButton > button:hover { border-color:#1b6947; color:#145238; }
     div.stButton > button[kind="primary"],
     div.stButton > button[data-testid="stBaseButton-primary"] {
         background:#1b6947; border-color:#1b6947; color:#fff;
@@ -185,7 +197,20 @@ st.markdown(
     }
     div[data-testid="stMetric"] { background:#edf4eb; border-radius:14px; padding:1rem; }
     [data-testid="stForm"] { background:white; border:1px solid #dfe7e1; border-radius:20px; padding:1.2rem 1.5rem; }
-    @media(max-width:700px) { .hero { padding:2.7rem 1.5rem; } .block-container { padding-top:4rem; } }
+    /* Native widgets inherit the brand color from config; these rules also cover focus chrome. */
+    :where(input,textarea,button,[role="combobox"]):focus-visible { outline-color:#1b6947 !important; box-shadow:0 0 0 .2rem rgba(27,105,71,.18) !important; }
+    [data-testid="stFeedback"] svg { color:#1b6947; }
+    footer { visibility:hidden; }
+    @media(max-width:700px) {
+      .hero { padding:2.5rem 1.35rem; border-radius:22px; }
+      .hero h1 { font-size:2.55rem; }
+      .block-container { padding:3.5rem 1rem 2.5rem; }
+      .profile-title { align-items:flex-start; }
+      .avatar.large { width:58px; height:58px; flex-basis:58px; }
+      .trainer-card { min-height:0; }
+      [data-testid="stHorizontalBlock"] { flex-wrap:wrap; }
+      [data-testid="column"] { min-width:min(100%, 280px); }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -350,24 +375,49 @@ def admin_trainer_markup(trainer):
     skills = " · ".join(html.escape(skill) for skill in trainer.get("skills", [])[:3]) or "Competenze da aggiungere"
     return f"""
         <div class="admin-card">
-          <h3>{html.escape(trainer['name'])}</h3>
-          <div class="admin-line">{html.escape(trainer['gym'])}</div>
+          <div class="trainer-head">{avatar_markup(trainer)}<div><h3>{html.escape(trainer['name'])}</h3>
+          <div class="admin-line">{html.escape(trainer['gym'])}</div></div></div>
           <div class="admin-line">{skills}</div>
-          <div class="admin-line"><span class="verified">Verificato</span> &nbsp; {rating} · {review_count} recensioni · {request_count} richieste</div>
-          <div class="{profile_class}">{profile_label}</div>
+          <div class="admin-line">★ {rating} · {review_count} recensioni · {request_count} richieste</div>
+          <div><span class="verified">Verificato</span> &nbsp; <span class="{profile_class}">{profile_label}</span></div>
         </div>
     """
+
+
+def trainer_initials(trainer):
+    """Return a compact text fallback that can later be replaced by an image."""
+    return "".join(part[0] for part in trainer["name"].split()[:2]).upper()
+
+
+def avatar_markup(trainer, large=False):
+    """Centralized, dependency-free trainer avatar markup."""
+    size_class = " large" if large else ""
+    return f'<div class="avatar{size_class}" aria-hidden="true">{html.escape(trainer_initials(trainer))}</div>'
 
 
 def card_markup(trainer, detailed=False):
-    skills = "".join(f'<span class="tag">{html.escape(skill)}</span>' for skill in trainer["skills"][:3])
+    skills = " · ".join(html.escape(skill) for skill in trainer["skills"][:3])
     bio = f"<p>{html.escape(trainer['bio'])}</p>" if detailed else ""
+    summary = review_summary(st.session_state.reviews.get(trainer["name"], []))
+    rating = (
+        f'★ {summary["overall"]:.1f} · {summary["count"]} '
+        f'{"recensione" if summary["count"] == 1 else "recensioni"}'
+        if summary else "Nuovo su Trainer Agorà"
+    )
     return f"""
         <div class="trainer-card">
-          <div class="muted">{html.escape(trainer['gym'])} · {trainer['experience_years']} anni di esperienza</div>
-          <h3>{html.escape(trainer['name'])}</h3>{bio}<div>{skills}</div>
+          <div class="trainer-head">{avatar_markup(trainer)}<div><h3>{html.escape(trainer['name'])}</h3>
+          <div class="muted">{html.escape(trainer['gym'])}</div></div></div>
+          {bio}<div class="card-skills">{skills}</div><div class="card-rating">{rating}</div>
         </div>
     """
+
+
+def render_trainer_card(trainer, key, detailed=False, label="Visualizza profilo", origin="home"):
+    """Render the shared trainer card and its full-width, visually connected CTA."""
+    st.markdown(card_markup(trainer, detailed=detailed), unsafe_allow_html=True)
+    if st.button(f"{label} →", key=key, use_container_width=True):
+        open_profile(trainer["name"], origin)
 
 
 def render_brand():
@@ -379,7 +429,7 @@ def render_reviews(trainer, show_review_form=True):
     reviews = st.session_state.reviews.get(trainer["name"], [])
     summary = review_summary(reviews)
     st.header("Recensioni")
-    st.caption("Contenuti dimostrativi nella versione beta · salvati solo per questa sessione.")
+    st.caption("Le valutazioni inserite restano disponibili per questa sessione.")
     if summary:
         overall, quality, professionalism, communication = st.columns(4)
         overall.metric("Valutazione media", f'{summary["overall"]:.1f} / 5')
@@ -403,20 +453,24 @@ def render_reviews(trainer, show_review_form=True):
     if not show_review_form:
         return
     st.subheader("Lascia una recensione")
-    st.write("Scegli da una a cinque stelle per ciascun aspetto.")
-    star_options = ["★", "★★", "★★★", "★★★★", "★★★★★"]
+    st.write("Valuta ogni aspetto da una a cinque stelle.")
     with st.form(f'review_form_{trainer["name"]}'):
         user_name = st.text_input("Il tuo nome", placeholder="Nome")
-        service_quality = st.radio("Qualità del servizio", star_options, index=4, horizontal=True)
-        professionalism = st.radio("Professionalità", star_options, index=4, horizontal=True)
-        communication = st.radio("Disponibilità e comunicazione", star_options, index=4, horizontal=True)
+        st.markdown("**Qualità del servizio**")
+        service_quality = st.feedback("stars", key=f'quality_{trainer["name"]}')
+        st.markdown("**Professionalità**")
+        professionalism = st.feedback("stars", key=f'professionalism_{trainer["name"]}')
+        st.markdown("**Disponibilità e comunicazione**")
+        communication = st.feedback("stars", key=f'communication_{trainer["name"]}')
         submitted = st.form_submit_button("Invia recensione", type="primary", use_container_width=True)
     if submitted:
         if not user_name.strip():
             st.error("Inserisci il tuo nome per inviare la recensione.")
+        elif None in (service_quality, professionalism, communication):
+            st.error("Seleziona una valutazione per tutti e tre gli aspetti.")
         else:
             updated = save_review(
-                trainer["name"], user_name, len(service_quality), len(professionalism), len(communication)
+                trainer["name"], user_name, service_quality + 1, professionalism + 1, communication + 1
             )
             st.session_state.review_notice = (
                 "Hai già recensito questo trainer. La nuova valutazione ha aggiornato quella precedente."
@@ -427,36 +481,28 @@ def render_reviews(trainer, show_review_form=True):
 
 def render_public_profile(trainer, show_user_actions=True):
     """Render the single public-profile view used by visitors and trainers."""
-    st.markdown(f'<div class="eyebrow">{html.escape(trainer["gym"])}</div>', unsafe_allow_html=True)
-    st.title(trainer["name"])
-    st.markdown('<span class="verified">Professionista verificato</span>', unsafe_allow_html=True)
-    st.subheader(" · ".join(trainer["skills"][:3]))
-    st.write(f"**{trainer['experience_years']} anni di esperienza**")
+    summary = review_summary(st.session_state.reviews.get(trainer["name"], []))
+    rating = f'★ {summary["overall"]:.1f} · {summary["count"]} recensioni' if summary else "Nessuna recensione"
+    st.markdown(
+        f'''<section class="profile-hero"><div class="profile-title">{avatar_markup(trainer, large=True)}<div>
+        <div class="eyebrow">Professionista verificato</div><h1>{html.escape(trainer["name"])}</h1>
+        <div>{html.escape(trainer["gym"])}</div></div></div>
+        <div class="profile-meta">{trainer['experience_years']} anni di esperienza · {html.escape(" · ".join(trainer["modalities"]))} &nbsp; | &nbsp; <strong>{rating}</strong></div></section>''',
+        unsafe_allow_html=True,
+    )
+    st.subheader("Il mio approccio")
     st.write(trainer["bio"])
     if not show_user_actions:
         st.caption("Anteprima del profilo pubblico")
     st.divider()
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("Competenze")
-        for item in trainer["skills"]:
-            st.write(f"✓ {item}")
-        st.subheader("Obiettivi seguiti")
-        for item in trainer["goals"]:
-            st.write(f"✓ {item}")
-        st.subheader("Servizi")
-        for item in trainer["services"]:
-            st.write(f"✓ {item}")
+        for title, values in (("Competenze", trainer["skills"]), ("Obiettivi seguiti", trainer["goals"]), ("Servizi", trainer["services"])):
+            tags = "".join(f'<span class="tag">{html.escape(item)}</span>' for item in values)
+            st.markdown(f'<div class="detail-block"><h3>{title}</h3>{tags}</div>', unsafe_allow_html=True)
     with col2:
-        st.subheader("Come possiamo lavorare")
-        st.write("**Modalità**")
-        st.write(" · ".join(trainer["modalities"]))
-        st.write("**Disponibilità**")
-        st.write(" · ".join(trainer["availability"]))
-        st.write("**Tipo di supporto**")
-        st.write(" · ".join(trainer["support"]))
-        st.write("**Livelli seguiti**")
-        st.write(" · ".join(trainer["levels"]))
+        for title, values in (("Modalità", trainer["modalities"]), ("Disponibilità", trainer["availability"]), ("Tipo di supporto", trainer["support"]), ("Livelli seguiti", trainer["levels"])):
+            st.markdown(f'<div class="detail-block"><h3>{title}</h3>{html.escape(" · ".join(values))}</div>', unsafe_allow_html=True)
     st.divider()
     if show_user_actions:
         notice = st.session_state.pop("request_notice", None)
@@ -526,12 +572,7 @@ if page == "home":
         matches = search_trainers(query)
         st.caption(f"{len(matches)} {'risultato' if len(matches) == 1 else 'risultati'}")
         for trainer in matches:
-            left, right = st.columns([4, 1])
-            with left:
-                st.markdown(card_markup(trainer), unsafe_allow_html=True)
-            with right:
-                if st.button("Visualizza profilo", key=f"search_{trainer['name']}", use_container_width=True):
-                    open_profile(trainer["name"], "home")
+            render_trainer_card(trainer, f"search_{trainer['name']}")
         if not matches:
             st.info("Nessun professionista corrisponde alla ricerca. Prova con una competenza o una sede diversa.")
 
@@ -541,9 +582,7 @@ if page == "home":
     cols = st.columns(3)
     for col, trainer in zip(cols, [TRAINERS[1], TRAINERS[2], TRAINERS[3]]):
         with col:
-            st.markdown(card_markup(trainer, detailed=True), unsafe_allow_html=True)
-            if st.button("Scopri il profilo", key=f"featured_{trainer['name']}", use_container_width=True):
-                open_profile(trainer["name"], "home")
+            render_trainer_card(trainer, f"featured_{trainer['name']}", detailed=True, label="Scopri il profilo")
 
 elif page == "questionario":
     render_brand()
@@ -590,17 +629,11 @@ elif page == "risultati":
     st.divider()
     for position, (score, _, trainer, reasons) in enumerate(suitable, 1):
         with st.container(border=True):
-            info, metric = st.columns([4, 1])
-            with info:
-                st.caption(f"SCELTA {position} · {trainer['gym']}")
-                st.subheader(trainer["name"])
-                st.write(" · ".join(trainer["skills"][:3]))
-                st.caption(f"{trainer['experience_years']} anni di esperienza")
-            with metric:
-                st.metric("Compatibilità", f"{score}/100")
+            st.caption(f"SCELTA {position} · Compatibilità {score}/100")
+            st.markdown(card_markup(trainer), unsafe_allow_html=True)
             st.markdown("**Perché te lo consigliamo**")
             st.write("; ".join(reason.capitalize() for reason in reasons) + ".")
-            if st.button("Visualizza profilo", key=f"result_{trainer['name']}", use_container_width=True):
+            if st.button("Visualizza profilo →", key=f"result_{trainer['name']}", use_container_width=True):
                 open_profile(trainer["name"], "risultati")
     if len(suitable) < 3:
         st.info(f"Ti mostriamo {len(suitable)} {'profilo' if len(suitable) == 1 else 'profili'} davvero pertinente. Preferiamo non suggerirti trainer poco adatti: modifica una preferenza per ampliare la selezione.")
@@ -627,12 +660,7 @@ elif page == "palestre":
     gym_trainers = [trainer for trainer in TRAINERS if trainer["gym"] == selected_gym]
     st.subheader(f"{len(gym_trainers)} professionisti a {selected_gym.replace('GreenTheory ', '')}")
     for trainer in gym_trainers:
-        left, right = st.columns([4, 1])
-        with left:
-            st.markdown(card_markup(trainer, detailed=True), unsafe_allow_html=True)
-        with right:
-            if st.button("Visualizza profilo", key=f"gym_{trainer['name']}", use_container_width=True):
-                open_profile(trainer["name"], "palestre")
+        render_trainer_card(trainer, f"gym_{trainer['name']}", detailed=True, origin="palestre")
 
 elif page == "area_trainer":
     render_brand()
@@ -656,7 +684,7 @@ elif page == "area_greentheory":
     st.markdown('<div class="eyebrow">Vista demo GreenTheory</div>', unsafe_allow_html=True)
     st.title("GreenTheory Network")
     st.write("Panoramica dei professionisti e delle interazioni nel network.")
-    st.caption("Vista dimostrativa — dati della sessione.")
+    st.caption("Vista dimostrativa con dati aggregati della sessione.")
 
     gym_options = ["Tutte le palestre"] + list(dict.fromkeys(trainer["gym"] for trainer in TRAINERS))
     selected_gym = st.selectbox("Filtra per palestra", gym_options, key="admin_gym_filter")
@@ -666,15 +694,16 @@ elif page == "area_greentheory":
     )
     metrics = admin_summary(filtered_trainers)
     metric_columns = st.columns(4)
-    metric_columns[0].metric("Professionisti nel network", metrics["professionals"])
-    metric_columns[1].metric("Palestre rappresentate", metrics["gyms"])
-    metric_columns[2].metric("Richieste generate", metrics["requests"])
+    metric_columns[0].metric("Professionisti", metrics["professionals"])
+    metric_columns[1].metric("Palestre", metrics["gyms"])
+    metric_columns[2].metric("Richieste", metrics["requests"])
     metric_columns[3].metric(
-        "Valutazione media del network",
+        "Rating network",
         f'{metrics["rating"]:.1f} / 5' if metrics["rating"] is not None else "—",
     )
 
-    st.header("Professionisti per palestra")
+    st.header("Network professionisti")
+    st.write("Stato sintetico dei profili e delle interazioni, senza dati personali delle richieste.")
     visible_gyms = list(dict.fromkeys(trainer["gym"] for trainer in filtered_trainers))
     for gym in visible_gyms:
         gym_trainers = [trainer for trainer in filtered_trainers if trainer["gym"] == gym]
@@ -682,12 +711,6 @@ elif page == "area_greentheory":
         st.caption(f'{len(gym_trainers)} {"professionista" if len(gym_trainers) == 1 else "professionisti"}')
         for trainer in gym_trainers:
             st.markdown(admin_trainer_markup(trainer), unsafe_allow_html=True)
-
-    st.divider()
-    st.header("Network professionisti")
-    st.write("Stato sintetico dei profili e delle interazioni, senza dati personali delle richieste.")
-    for trainer in filtered_trainers:
-        st.markdown(admin_trainer_markup(trainer), unsafe_allow_html=True)
 
 elif page == "dashboard_trainer":
     trainer = trainer_by_name(st.session_state.get("logged_trainer"))
@@ -699,28 +722,27 @@ elif page == "dashboard_trainer":
     header, home = st.columns([4, 1])
     with header:
         st.markdown('<div class="eyebrow">Dashboard trainer</div>', unsafe_allow_html=True)
-        st.title(trainer["name"])
-        st.write(trainer["gym"])
-        st.markdown('<span class="verified">Professionista verificato</span>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="profile-title">{avatar_markup(trainer)}<div><h1>{html.escape(trainer["name"])}</h1>'
+            f'<div>{html.escape(trainer["gym"])}</div></div></div>', unsafe_allow_html=True,
+        )
+        completion = "Profilo completo" if profile_is_complete(trainer) else "Profilo da completare"
+        st.markdown(f'<span class="verified">Professionista verificato</span> &nbsp; <strong>{completion}</strong>', unsafe_allow_html=True)
+        st.caption(f'{trainer["experience_years"]} anni di esperienza · {" · ".join(trainer["modalities"])}')
     with home:
         if st.button("Torna alla Home", use_container_width=True):
             go_to("home")
-    st.markdown("### Il tuo profilo")
-    with st.container(border=True):
-        st.markdown("**Completo**")
-        summary = st.columns(5)
-        summary[0].metric("Palestra", trainer["gym"].replace("GreenTheory ", ""))
-        summary[1].metric("Esperienza", f"{trainer['experience_years']} anni")
-        summary[2].metric("Modalità", len(trainer["modalities"]))
-        summary[3].metric("Servizi", len(trainer["services"]))
-        summary[4].metric("Competenze", len(trainer["skills"]))
     trainer_reviews = st.session_state.reviews.get(trainer["name"], [])
     ratings = review_summary(trainer_reviews)
-    st.markdown("### Valutazione media")
+    trainer_requests = requests_for(trainer["name"])
+    new_requests = sum(request["status"] == "Nuova" for request in trainer_requests)
+    kpis = st.columns(4)
+    kpis[0].metric("Valutazione", f'{ratings["overall"]:.1f} / 5' if ratings else "—")
+    kpis[1].metric("Recensioni", ratings["count"] if ratings else 0)
+    kpis[2].metric("Richieste", len(trainer_requests))
+    kpis[3].metric("Nuove", new_requests)
+    st.markdown("### Recensioni ricevute")
     if ratings:
-        rating, review_count = st.columns(2)
-        rating.metric("Valutazione media", f'{ratings["overall"]:.1f} / 5')
-        review_count.metric("Recensioni", ratings["count"])
         with st.expander("Le mie recensioni"):
             for review in trainer_reviews:
                 st.markdown(f'**{review["user_name"]}** · {review_overall(review):.1f}/5')
@@ -730,12 +752,6 @@ elif page == "dashboard_trainer":
                 )
     else:
         st.info("Nessuna recensione ancora")
-    trainer_requests = requests_for(trainer["name"])
-    new_requests = sum(request["status"] == "Nuova" for request in trainer_requests)
-    st.markdown("### Richieste ricevute")
-    total_metric, new_metric = st.columns(2)
-    total_metric.metric("Richieste ricevute", len(trainer_requests))
-    new_metric.metric("Nuove", new_requests)
     st.markdown("### Azioni principali")
     edit, public, requests = st.columns(3)
     with edit:
