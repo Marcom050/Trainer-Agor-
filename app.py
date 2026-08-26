@@ -165,6 +165,11 @@ st.markdown(
     .muted { color: #66736b; font-size: .9rem; }
     .score { color: #1b6947; font-weight: 800; font-size: 1.6rem; }
     .verified { display:inline-block; background:#dff1e4; color:#155b3b; border:1px solid #b9ddc4; padding:.32rem .7rem; border-radius:20px; font-size:.8rem; font-weight:750; }
+    .admin-card { background:white; border:1px solid #dfe7e1; border-radius:16px; padding:1rem 1.15rem; margin:.45rem 0; }
+    .admin-card h3 { margin:.15rem 0 .25rem; font-size:1.08rem; }
+    .admin-line { color:#536158; font-size:.88rem; margin:.2rem 0; }
+    .profile-ok { color:#17613f; font-weight:750; }
+    .profile-todo { color:#8a5a18; font-weight:750; }
     div.stButton > button { border-radius: 10px; min-height: 2.8rem; font-weight: 700; }
     div.stButton > button[kind="primary"],
     div.stButton > button[data-testid="stBaseButton-primary"] {
@@ -304,6 +309,54 @@ def requests_for(trainer_name):
         (request for request in st.session_state.requests if request["trainer_name"] == trainer_name),
         key=lambda request: request["created_at"], reverse=True,
     )
+
+
+def profile_is_complete(trainer):
+    """Use only the six essential public fields for a simple completeness state."""
+    required_fields = ("bio", "gym", "skills", "services", "availability", "modalities")
+    return all(bool(trainer.get(field)) for field in required_fields)
+
+
+def admin_summary(trainers):
+    """Calculate the demo dashboard metrics from current session data."""
+    trainer_names = {trainer["name"] for trainer in trainers}
+    reviews = [
+        review
+        for trainer_name in trainer_names
+        for review in st.session_state.reviews.get(trainer_name, [])
+    ]
+    requests = [
+        request for request in st.session_state.requests
+        if request.get("trainer_name") in trainer_names
+    ]
+    return {
+        "professionals": len(trainers),
+        "gyms": len({trainer["gym"] for trainer in trainers}),
+        "requests": len(requests),
+        "rating": (sum(review_overall(review) for review in reviews) / len(reviews)) if reviews else None,
+    }
+
+
+def admin_trainer_markup(trainer):
+    """Render aggregate professional data without exposing request contents."""
+    reviews = st.session_state.reviews.get(trainer["name"], [])
+    summary = review_summary(reviews)
+    request_count = len(requests_for(trainer["name"]))
+    rating = f'{summary["overall"]:.1f} / 5' if summary else "Nessuna valutazione"
+    review_count = summary["count"] if summary else 0
+    complete = profile_is_complete(trainer)
+    profile_label = "Profilo completo" if complete else "Profilo da completare"
+    profile_class = "profile-ok" if complete else "profile-todo"
+    skills = " · ".join(html.escape(skill) for skill in trainer.get("skills", [])[:3]) or "Competenze da aggiungere"
+    return f"""
+        <div class="admin-card">
+          <h3>{html.escape(trainer['name'])}</h3>
+          <div class="admin-line">{html.escape(trainer['gym'])}</div>
+          <div class="admin-line">{skills}</div>
+          <div class="admin-line"><span class="verified">Verificato</span> &nbsp; {rating} · {review_count} recensioni · {request_count} richieste</div>
+          <div class="{profile_class}">{profile_label}</div>
+        </div>
+    """
 
 
 def card_markup(trainer, detailed=False):
@@ -460,6 +513,10 @@ if page == "home":
     if st.button("Accedi all'Area Trainer", type="tertiary"):
         go_to("area_trainer")
 
+    st.caption("Per GreenTheory")
+    if st.button("Area GreenTheory", type="tertiary"):
+        go_to("area_greentheory")
+
     st.markdown("### Trova un trainer")
     query = st.text_input(
         "Cerca per nome, palestra, competenza, obiettivo, servizio o modalità",
@@ -591,6 +648,46 @@ elif page == "area_trainer":
         if st.form_submit_button("Entra nella dashboard", type="primary", use_container_width=True):
             st.session_state.logged_trainer = selected
             go_to("dashboard_trainer")
+
+elif page == "area_greentheory":
+    render_brand()
+    if st.button("← Torna alla home"):
+        go_to("home")
+    st.markdown('<div class="eyebrow">Vista demo GreenTheory</div>', unsafe_allow_html=True)
+    st.title("GreenTheory Network")
+    st.write("Panoramica dei professionisti e delle interazioni nel network.")
+    st.caption("Vista dimostrativa — dati della sessione.")
+
+    gym_options = ["Tutte le palestre"] + list(dict.fromkeys(trainer["gym"] for trainer in TRAINERS))
+    selected_gym = st.selectbox("Filtra per palestra", gym_options, key="admin_gym_filter")
+    filtered_trainers = (
+        TRAINERS if selected_gym == "Tutte le palestre"
+        else [trainer for trainer in TRAINERS if trainer["gym"] == selected_gym]
+    )
+    metrics = admin_summary(filtered_trainers)
+    metric_columns = st.columns(4)
+    metric_columns[0].metric("Professionisti nel network", metrics["professionals"])
+    metric_columns[1].metric("Palestre rappresentate", metrics["gyms"])
+    metric_columns[2].metric("Richieste generate", metrics["requests"])
+    metric_columns[3].metric(
+        "Valutazione media del network",
+        f'{metrics["rating"]:.1f} / 5' if metrics["rating"] is not None else "—",
+    )
+
+    st.header("Professionisti per palestra")
+    visible_gyms = list(dict.fromkeys(trainer["gym"] for trainer in filtered_trainers))
+    for gym in visible_gyms:
+        gym_trainers = [trainer for trainer in filtered_trainers if trainer["gym"] == gym]
+        st.subheader(gym)
+        st.caption(f'{len(gym_trainers)} {"professionista" if len(gym_trainers) == 1 else "professionisti"}')
+        for trainer in gym_trainers:
+            st.markdown(admin_trainer_markup(trainer), unsafe_allow_html=True)
+
+    st.divider()
+    st.header("Network professionisti")
+    st.write("Stato sintetico dei profili e delle interazioni, senza dati personali delle richieste.")
+    for trainer in filtered_trainers:
+        st.markdown(admin_trainer_markup(trainer), unsafe_allow_html=True)
 
 elif page == "dashboard_trainer":
     trainer = trainer_by_name(st.session_state.get("logged_trainer"))
