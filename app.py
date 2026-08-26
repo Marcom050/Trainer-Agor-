@@ -1,3 +1,5 @@
+import copy
+import html
 import unicodedata
 
 import streamlit as st
@@ -93,6 +95,12 @@ TRAINERS = [
     },
 ]
 
+# Keep the source data immutable: trainer edits live only for the current
+# Streamlit session and are automatically discarded when that session ends.
+if "trainer_profiles" not in st.session_state:
+    st.session_state.trainer_profiles = copy.deepcopy(TRAINERS)
+TRAINERS = st.session_state.trainer_profiles
+
 GYMS = list(dict.fromkeys(trainer["gym"] for trainer in TRAINERS))
 GOALS = ["Aumento massa muscolare", "Dimagrimento", "Forza", "Benessere generale", "Mobilità e postura"]
 LEVELS = ["Principiante", "Intermedio", "Avanzato"]
@@ -117,6 +125,7 @@ st.markdown(
     .tag { display: inline-block; background: #edf4eb; color: #28573c; padding: .28rem .62rem; border-radius: 20px; margin: .15rem .1rem; font-size: .78rem; }
     .muted { color: #66736b; font-size: .9rem; }
     .score { color: #1b6947; font-weight: 800; font-size: 1.6rem; }
+    .verified { display:inline-block; background:#dff1e4; color:#155b3b; border:1px solid #b9ddc4; padding:.32rem .7rem; border-radius:20px; font-size:.8rem; font-weight:750; }
     div.stButton > button { border-radius: 10px; min-height: 2.8rem; font-weight: 700; }
     div.stButton > button[kind="primary"],
     div.stButton > button[data-testid="stBaseButton-primary"] {
@@ -197,18 +206,53 @@ def calculate_match(trainer, answers):
 
 
 def card_markup(trainer, detailed=False):
-    skills = "".join(f'<span class="tag">{skill}</span>' for skill in trainer["skills"][:3])
-    bio = f"<p>{trainer['bio']}</p>" if detailed else ""
+    skills = "".join(f'<span class="tag">{html.escape(skill)}</span>' for skill in trainer["skills"][:3])
+    bio = f"<p>{html.escape(trainer['bio'])}</p>" if detailed else ""
     return f"""
         <div class="trainer-card">
-          <div class="muted">{trainer['gym']} · {trainer['experience_years']} anni di esperienza</div>
-          <h3>{trainer['name']}</h3>{bio}<div>{skills}</div>
+          <div class="muted">{html.escape(trainer['gym'])} · {trainer['experience_years']} anni di esperienza</div>
+          <h3>{html.escape(trainer['name'])}</h3>{bio}<div>{skills}</div>
         </div>
     """
 
 
 def render_brand():
     st.markdown('<div class="brand">Trainer Agorà</div>', unsafe_allow_html=True)
+
+
+def render_public_profile(trainer):
+    """Render the single public-profile view used by visitors and trainers."""
+    st.markdown(f'<div class="eyebrow">{html.escape(trainer["gym"])}</div>', unsafe_allow_html=True)
+    st.title(trainer["name"])
+    st.markdown('<span class="verified">Professionista verificato</span>', unsafe_allow_html=True)
+    st.subheader(" · ".join(trainer["skills"][:3]))
+    st.write(f"**{trainer['experience_years']} anni di esperienza**")
+    st.write(trainer["bio"])
+    st.divider()
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Competenze")
+        for item in trainer["skills"]:
+            st.write(f"✓ {item}")
+        st.subheader("Obiettivi seguiti")
+        for item in trainer["goals"]:
+            st.write(f"✓ {item}")
+        st.subheader("Servizi")
+        for item in trainer["services"]:
+            st.write(f"✓ {item}")
+    with col2:
+        st.subheader("Come possiamo lavorare")
+        st.write("**Modalità**")
+        st.write(" · ".join(trainer["modalities"]))
+        st.write("**Disponibilità**")
+        st.write(" · ".join(trainer["availability"]))
+        st.write("**Tipo di supporto**")
+        st.write(" · ".join(trainer["support"]))
+        st.write("**Livelli seguiti**")
+        st.write(" · ".join(trainer["levels"]))
+    st.divider()
+    if st.button("Sono interessato a questo trainer", type="primary", use_container_width=True):
+        st.success(f"Perfetto! Abbiamo registrato il tuo interesse per {trainer['name']}. In una prossima versione potrai inviare direttamente una richiesta.")
 
 
 page = st.session_state.page
@@ -228,6 +272,10 @@ if page == "home":
     with cta_secondary:
         if st.button("Esplora le palestre", use_container_width=True):
             go_to("palestre")
+
+    st.caption("Sei un professionista?")
+    if st.button("Accedi all'Area Trainer", type="tertiary"):
+        go_to("area_trainer")
 
     st.markdown("### Trova un trainer")
     query = st.text_input(
@@ -322,37 +370,11 @@ elif page == "profilo":
     if trainer is None:
         go_to("home")
     origin = st.session_state.get("profile_origin", "home")
-    back_labels = {"risultati": "← Torna ai risultati", "palestre": "← Torna alla palestra", "home": "← Torna alla home"}
+    back_labels = {"risultati": "← Torna ai risultati", "palestre": "← Torna alla palestra", "home": "← Torna alla home", "dashboard_trainer": "← Torna alla dashboard"}
     render_brand()
     if st.button(back_labels.get(origin, "← Torna alla home")):
-        go_to(origin if origin in {"risultati", "palestre"} else "home")
-    st.markdown(f'<div class="eyebrow">{trainer["gym"]}</div>', unsafe_allow_html=True)
-    st.title(trainer["name"])
-    st.subheader(" · ".join(trainer["skills"][:3]))
-    st.write(f"**{trainer['experience_years']} anni di esperienza**")
-    st.write(trainer["bio"])
-    st.divider()
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Competenze")
-        for item in trainer["skills"]:
-            st.write(f"✓ {item}")
-        st.subheader("Servizi")
-        for item in trainer["services"]:
-            st.write(f"✓ {item}")
-    with col2:
-        st.subheader("Come possiamo lavorare")
-        st.write("**Modalità**")
-        st.write(" · ".join(trainer["modalities"]))
-        st.write("**Disponibilità**")
-        st.write(" · ".join(trainer["availability"]))
-        st.write("**Tipo di supporto**")
-        st.write(" · ".join(trainer["support"]))
-        st.write("**Livelli seguiti**")
-        st.write(" · ".join(trainer["levels"]))
-    st.divider()
-    if st.button("Sono interessato a questo trainer", type="primary", use_container_width=True):
-        st.success(f"Perfetto! Abbiamo registrato il tuo interesse per {trainer['name']}. In una prossima versione potrai inviare direttamente una richiesta.")
+        go_to(origin if origin in {"risultati", "palestre", "dashboard_trainer"} else "home")
+    render_public_profile(trainer)
 
 elif page == "palestre":
     render_brand()
@@ -371,6 +393,117 @@ elif page == "palestre":
         with right:
             if st.button("Visualizza profilo", key=f"gym_{trainer['name']}", use_container_width=True):
                 open_profile(trainer["name"], "palestre")
+
+elif page == "area_trainer":
+    render_brand()
+    if st.button("← Torna alla home"):
+        go_to("home")
+    st.markdown('<div class="eyebrow">Spazio professionisti</div>', unsafe_allow_html=True)
+    st.title("Area Trainer")
+    st.subheader("Gestisci il tuo profilo professionale su Trainer Agorà.")
+    with st.form("trainer_login"):
+        names = [trainer["name"] for trainer in TRAINERS]
+        current = st.session_state.get("logged_trainer", names[0])
+        selected = st.selectbox("Accedi come", names, index=names.index(current) if current in names else 0)
+        if st.form_submit_button("Entra nella dashboard", type="primary", use_container_width=True):
+            st.session_state.logged_trainer = selected
+            go_to("dashboard_trainer")
+
+elif page == "dashboard_trainer":
+    trainer = trainer_by_name(st.session_state.get("logged_trainer"))
+    if trainer is None:
+        go_to("area_trainer")
+    render_brand()
+    if st.session_state.pop("profile_saved", False):
+        st.success("Profilo aggiornato. Le modifiche sono già visibili nel profilo pubblico e nella ricerca.")
+    header, home = st.columns([4, 1])
+    with header:
+        st.markdown('<div class="eyebrow">Dashboard trainer</div>', unsafe_allow_html=True)
+        st.title(trainer["name"])
+        st.write(trainer["gym"])
+        st.markdown('<span class="verified">Professionista verificato</span>', unsafe_allow_html=True)
+    with home:
+        if st.button("Torna alla Home", use_container_width=True):
+            go_to("home")
+    st.markdown("### Il tuo profilo")
+    with st.container(border=True):
+        st.markdown("**Completo**")
+        summary = st.columns(5)
+        summary[0].metric("Palestra", trainer["gym"].replace("GreenTheory ", ""))
+        summary[1].metric("Esperienza", f"{trainer['experience_years']} anni")
+        summary[2].metric("Modalità", len(trainer["modalities"]))
+        summary[3].metric("Servizi", len(trainer["services"]))
+        summary[4].metric("Competenze", len(trainer["skills"]))
+    st.markdown("### Azioni principali")
+    edit, public, requests = st.columns(3)
+    with edit:
+        if st.button("Modifica profilo", type="primary", use_container_width=True):
+            go_to("modifica_trainer")
+    with public:
+        if st.button("Visualizza profilo pubblico", use_container_width=True):
+            open_profile(trainer["name"], "dashboard_trainer")
+    with requests:
+        if st.button("Richieste ricevute", use_container_width=True):
+            go_to("richieste_trainer")
+
+elif page == "modifica_trainer":
+    trainer = trainer_by_name(st.session_state.get("logged_trainer"))
+    if trainer is None:
+        go_to("area_trainer")
+    render_brand()
+    if st.button("← Torna alla dashboard"):
+        go_to("dashboard_trainer")
+    st.markdown('<div class="eyebrow">Area Trainer</div>', unsafe_allow_html=True)
+    st.title("Modifica profilo")
+
+    def choices(field, defaults):
+        return list(dict.fromkeys(defaults + [value for profile in TRAINERS for value in profile[field]]))
+
+    with st.form("edit_trainer"):
+        bio = st.text_area("Bio", value=trainer["bio"], height=130)
+        gym_options = list(dict.fromkeys(GYMS + [profile["gym"] for profile in TRAINERS]))
+        gym = st.selectbox("Palestra", gym_options, index=gym_options.index(trainer["gym"]))
+        experience = st.number_input("Anni di esperienza", min_value=0, max_value=50, value=trainer["experience_years"], step=1)
+        skills = st.multiselect("Competenze", choices("skills", []), default=trainer["skills"], accept_new_options=True)
+        goals = st.multiselect("Obiettivi seguiti", choices("goals", GOALS), default=trainer["goals"])
+        levels = st.multiselect("Livelli seguiti", choices("levels", LEVELS), default=trainer["levels"])
+        services = st.multiselect("Servizi offerti", choices("services", []), default=trainer["services"], accept_new_options=True)
+        support = st.multiselect("Tipo di supporto", choices("support", SUPPORT_TYPES), default=trainer["support"])
+        availability = st.multiselect("Fasce orarie disponibili", choices("availability", TIME_SLOTS), default=trainer["availability"])
+        modalities = st.multiselect("Modalità", ["In presenza", "Online"], default=trainer["modalities"])
+        submitted = st.form_submit_button("Salva modifiche", type="primary", use_container_width=True)
+    if submitted:
+        trainer.update({"bio": bio.strip(), "gym": gym, "experience_years": int(experience), "skills": skills,
+                        "goals": goals, "levels": levels, "services": services, "support": support,
+                        "availability": availability, "modalities": modalities})
+        st.session_state.profile_saved = True
+        go_to("dashboard_trainer")
+
+elif page == "richieste_trainer":
+    trainer = trainer_by_name(st.session_state.get("logged_trainer"))
+    if trainer is None:
+        go_to("area_trainer")
+    render_brand()
+    if st.button("← Torna alla dashboard"):
+        go_to("dashboard_trainer")
+    st.markdown('<div class="eyebrow">Area Trainer</div>', unsafe_allow_html=True)
+    st.title("Richieste ricevute")
+    st.caption("Dati dimostrativi, disponibili solo in memoria.")
+    demo_requests = {
+        "Andrea Conti": [
+            ("Marco", "Personal training 1:1", "Aumento massa muscolare", "Nuova"),
+            ("Luca", "Scheda personalizzata", "Forza", "Da ricontattare"),
+        ]
+    }
+    requests = demo_requests.get(trainer["name"], [])
+    if not requests:
+        st.info("Non hai ancora ricevuto richieste. Le nuove richieste compariranno qui.")
+    for person, service, goal, status in requests:
+        with st.container(border=True):
+            st.subheader(person)
+            st.write(f"**Interessato a:** {service}")
+            st.write(f"**Obiettivo:** {goal}")
+            st.caption(f"Stato: {status}")
 
 else:
     st.session_state.page = "home"
