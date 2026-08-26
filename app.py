@@ -1,3 +1,5 @@
+import unicodedata
+
 import streamlit as st
 
 
@@ -102,9 +104,10 @@ st.markdown(
     """
     <style>
     .stApp { background: #f5f7f4; color: #142018; }
-    .block-container { max-width: 1160px; padding-top: 2rem; padding-bottom: 4rem; }
+    /* Keep page content below Streamlit's fixed Community Cloud toolbar. */
+    .block-container { max-width: 1160px; padding-top: 4.5rem; padding-bottom: 4rem; }
     h1, h2, h3 { letter-spacing: -0.035em; }
-    .brand { font-size: 1.05rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #194f36; }
+    .brand { display:block; font-size: 1.05rem; line-height:1.35; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #194f36; }
     .hero { padding: 4.5rem 3.5rem; border-radius: 28px; background: linear-gradient(125deg,#102b20 0%,#1b5940 68%,#8bbd44 145%); color: white; margin: 1.2rem 0 2rem; }
     .hero h1 { font-size: clamp(2.7rem,6vw,5.4rem); line-height: .98; max-width: 850px; color: white; margin: .4rem 0 1.4rem; }
     .hero p { font-size: 1.16rem; line-height: 1.65; max-width: 680px; color: #e4eee8; }
@@ -115,9 +118,21 @@ st.markdown(
     .muted { color: #66736b; font-size: .9rem; }
     .score { color: #1b6947; font-weight: 800; font-size: 1.6rem; }
     div.stButton > button { border-radius: 10px; min-height: 2.8rem; font-weight: 700; }
+    div.stButton > button[kind="primary"],
+    div.stButton > button[data-testid="stBaseButton-primary"] {
+        background:#1b6947; border-color:#1b6947; color:#fff;
+    }
+    div.stButton > button[kind="primary"]:hover,
+    div.stButton > button[data-testid="stBaseButton-primary"]:hover {
+        background:#145238; border-color:#145238; color:#fff;
+    }
+    div.stButton > button[kind="primary"]:focus,
+    div.stButton > button[data-testid="stBaseButton-primary"]:focus {
+        box-shadow:0 0 0 .2rem rgba(27,105,71,.25); color:#fff;
+    }
     div[data-testid="stMetric"] { background:#edf4eb; border-radius:14px; padding:1rem; }
     [data-testid="stForm"] { background:white; border:1px solid #dfe7e1; border-radius:20px; padding:1.2rem 1.5rem; }
-    @media(max-width:700px) { .hero { padding:2.7rem 1.5rem; } .block-container { padding-top:1rem; } }
+    @media(max-width:700px) { .hero { padding:2.7rem 1.5rem; } .block-container { padding-top:4rem; } }
     </style>
     """,
     unsafe_allow_html=True,
@@ -143,6 +158,30 @@ def open_profile(trainer_name, origin):
 
 def trainer_by_name(name):
     return next((trainer for trainer in TRAINERS if trainer["name"] == name), None)
+
+
+def normalize_search_text(value):
+    """Normalize text so searches are case- and accent-insensitive."""
+    decomposed = unicodedata.normalize("NFKD", value.casefold())
+    return "".join(character for character in decomposed if not unicodedata.combining(character))
+
+
+def search_trainers(query):
+    """Find partial matches in every trainer detail useful to a visitor."""
+    needle = normalize_search_text(query).strip()
+    if not needle:
+        return []
+
+    searchable_fields = ("skills", "goals", "services", "modalities")
+    matches = []
+    for trainer in TRAINERS:
+        searchable_values = [trainer["name"], trainer["gym"]]
+        for field in searchable_fields:
+            searchable_values.extend(trainer[field])
+        haystack = normalize_search_text(" ".join(searchable_values))
+        if needle in haystack:
+            matches.append(trainer)
+    return matches
 
 
 def calculate_match(trainer, answers):
@@ -190,18 +229,20 @@ if page == "home":
         if st.button("Esplora le palestre", use_container_width=True):
             go_to("palestre")
 
-    st.markdown("### Cerca nella community")
-    query = st.text_input("Cerca trainer, competenze o palestra", placeholder="Es. mobilità, Monza, Giulia…", label_visibility="collapsed")
+    st.markdown("### Trova un trainer")
+    query = st.text_input(
+        "Cerca per nome, palestra, competenza, obiettivo, servizio o modalità",
+        placeholder="Es. Andrea, Monza, mobilità, ipertrofia, online…",
+    )
     if query.strip():
-        needle = query.casefold().strip()
-        matches = [t for t in TRAINERS if needle in " ".join([t["name"], t["gym"], *t["skills"], *t["goals"]]).casefold()]
+        matches = search_trainers(query)
         st.caption(f"{len(matches)} {'risultato' if len(matches) == 1 else 'risultati'}")
         for trainer in matches:
             left, right = st.columns([4, 1])
             with left:
                 st.markdown(card_markup(trainer), unsafe_allow_html=True)
             with right:
-                if st.button("Apri profilo", key=f"search_{trainer['name']}", use_container_width=True):
+                if st.button("Visualizza profilo", key=f"search_{trainer['name']}", use_container_width=True):
                     open_profile(trainer["name"], "home")
         if not matches:
             st.info("Nessun professionista corrisponde alla ricerca. Prova con una competenza o una sede diversa.")
