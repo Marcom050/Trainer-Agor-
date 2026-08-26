@@ -224,8 +224,35 @@ if "answers" not in st.session_state:
 
 
 def go_to(page):
+    if st.session_state.page != page:
+        st.session_state.scroll_to_top = True
     st.session_state.page = page
     st.rerun()
+
+
+def reset_scroll_after_navigation():
+    """Scroll the parent Streamlit page once after an internal navigation."""
+    if not st.session_state.pop("scroll_to_top", False):
+        return
+
+    st.iframe(
+        """
+        <script>
+        const scrollParentToTop = () => {
+            const parentWindow = window.parent;
+            parentWindow.scrollTo({ top: 0, left: 0, behavior: "instant" });
+            const app = parentWindow.document.querySelector('[data-testid="stAppViewContainer"]');
+            if (app) app.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        };
+        window.parent.requestAnimationFrame(() =>
+            window.parent.requestAnimationFrame(scrollParentToTop)
+        );
+        </script>
+        """,
+        height=1,
+        width=1,
+        tab_index=-1,
+    )
 
 
 def open_profile(trainer_name, origin):
@@ -538,6 +565,7 @@ def render_public_profile(trainer, show_user_actions=True):
 
 
 page = st.session_state.page
+reset_scroll_after_navigation()
 
 if page == "home":
     render_brand()
