@@ -95,11 +95,31 @@ TRAINERS = [
     },
 ]
 
+# Seed content for the beta only. A deep copy is placed in session state below,
+# so reviews added or edited by visitors never change these source values.
+DEMO_REVIEWS = {
+    "Luca Bianchi": [
+        {"user_name": "Elena", "service_quality": 5, "professionalism": 5, "communication": 4, "demo": True},
+        {"user_name": "Paolo", "service_quality": 4, "professionalism": 5, "communication": 4, "demo": True},
+    ],
+    "Giulia Rossi": [
+        {"user_name": "Chiara", "service_quality": 5, "professionalism": 4, "communication": 5, "demo": True},
+        {"user_name": "Davide", "service_quality": 4, "professionalism": 4, "communication": 5, "demo": True},
+        {"user_name": "Marta", "service_quality": 5, "professionalism": 5, "communication": 4, "demo": True},
+    ],
+    "Andrea Conti": [
+        {"user_name": "Simone", "service_quality": 4, "professionalism": 5, "communication": 4, "demo": True},
+        {"user_name": "Alessia", "service_quality": 5, "professionalism": 5, "communication": 4, "demo": True},
+    ],
+}
+
 # Keep the source data immutable: trainer edits live only for the current
 # Streamlit session and are automatically discarded when that session ends.
 if "trainer_profiles" not in st.session_state:
     st.session_state.trainer_profiles = copy.deepcopy(TRAINERS)
 TRAINERS = st.session_state.trainer_profiles
+if "reviews" not in st.session_state:
+    st.session_state.reviews = copy.deepcopy(DEMO_REVIEWS)
 
 GYMS = list(dict.fromkeys(trainer["gym"] for trainer in TRAINERS))
 GOALS = ["Aumento massa muscolare", "Dimagrimento", "Forza", "Benessere generale", "Mobilità e postura"]
@@ -205,6 +225,47 @@ def calculate_match(trainer, answers):
     return sum(weight for matched, weight, _ in checks if matched), [reason for matched, _, reason in checks if matched]
 
 
+def review_overall(review):
+    """Calculate one review's overall score from its three dimensions."""
+    return sum(review[field] for field in ("service_quality", "professionalism", "communication")) / 3
+
+
+def review_summary(reviews):
+    """Return calculated aggregate ratings, or None when there are no reviews."""
+    if not reviews:
+        return None
+    count = len(reviews)
+    return {
+        "overall": sum(review_overall(review) for review in reviews) / count,
+        "service_quality": sum(review["service_quality"] for review in reviews) / count,
+        "professionalism": sum(review["professionalism"] for review in reviews) / count,
+        "communication": sum(review["communication"] for review in reviews) / count,
+        "count": count,
+    }
+
+
+def save_review(trainer_name, user_name, service_quality, professionalism, communication):
+    """Create or update a review by case-insensitive reviewer name this session."""
+    ratings = (service_quality, professionalism, communication)
+    if any(not isinstance(rating, int) or not 1 <= rating <= 5 for rating in ratings):
+        raise ValueError("Ogni valutazione deve essere compresa tra 1 e 5.")
+    reviews = st.session_state.reviews.setdefault(trainer_name, [])
+    normalized_name = user_name.strip().casefold()
+    new_review = {
+        "user_name": user_name.strip(),
+        "service_quality": service_quality,
+        "professionalism": professionalism,
+        "communication": communication,
+        "demo": False,
+    }
+    for index, review in enumerate(reviews):
+        if review["user_name"].strip().casefold() == normalized_name:
+            reviews[index] = new_review
+            return True
+    reviews.append(new_review)
+    return False
+
+
 def card_markup(trainer, detailed=False):
     skills = "".join(f'<span class="tag">{html.escape(skill)}</span>' for skill in trainer["skills"][:3])
     bio = f"<p>{html.escape(trainer['bio'])}</p>" if detailed else ""
@@ -220,7 +281,58 @@ def render_brand():
     st.markdown('<div class="brand">Trainer Agorà</div>', unsafe_allow_html=True)
 
 
-def render_public_profile(trainer):
+def render_reviews(trainer, show_review_form=True):
+    """Render the compact review summary, details, and optional visitor form."""
+    reviews = st.session_state.reviews.get(trainer["name"], [])
+    summary = review_summary(reviews)
+    st.header("Recensioni")
+    st.caption("Contenuti dimostrativi nella versione beta · salvati solo per questa sessione.")
+    if summary:
+        overall, quality, professionalism, communication = st.columns(4)
+        overall.metric("Valutazione media", f'{summary["overall"]:.1f} / 5')
+        quality.metric("Qualità del servizio", f'{summary["service_quality"]:.1f}')
+        professionalism.metric("Professionalità", f'{summary["professionalism"]:.1f}')
+        communication.metric("Disponibilità e comunicazione", f'{summary["communication"]:.1f}')
+        st.write(f'**{summary["count"]} {"recensione" if summary["count"] == 1 else "recensioni"}**')
+        with st.expander("Leggi le singole recensioni"):
+            for review in reviews:
+                demo_label = " · Demo" if review.get("demo") else ""
+                st.markdown(f'**{review["user_name"]}** · {review_overall(review):.1f}/5{demo_label}')
+                st.caption(
+                    f'Qualità del servizio: {review["service_quality"]}/5 · '
+                    f'Professionalità: {review["professionalism"]}/5 · '
+                    f'Disponibilità e comunicazione: {review["communication"]}/5'
+                )
+                st.divider()
+    else:
+        st.info("Nessuna recensione ancora.")
+
+    if not show_review_form:
+        return
+    st.subheader("Lascia una recensione")
+    st.write("Scegli da una a cinque stelle per ciascun aspetto.")
+    star_options = ["★", "★★", "★★★", "★★★★", "★★★★★"]
+    with st.form(f'review_form_{trainer["name"]}'):
+        user_name = st.text_input("Il tuo nome", placeholder="Nome")
+        service_quality = st.radio("Qualità del servizio", star_options, index=4, horizontal=True)
+        professionalism = st.radio("Professionalità", star_options, index=4, horizontal=True)
+        communication = st.radio("Disponibilità e comunicazione", star_options, index=4, horizontal=True)
+        submitted = st.form_submit_button("Invia recensione", type="primary", use_container_width=True)
+    if submitted:
+        if not user_name.strip():
+            st.error("Inserisci il tuo nome per inviare la recensione.")
+        else:
+            updated = save_review(
+                trainer["name"], user_name, len(service_quality), len(professionalism), len(communication)
+            )
+            st.session_state.review_notice = (
+                "Hai già recensito questo trainer. La nuova valutazione ha aggiornato quella precedente."
+                if updated else "Recensione inviata. Grazie per la tua valutazione!"
+            )
+            st.rerun()
+
+
+def render_public_profile(trainer, show_user_actions=True):
     """Render the single public-profile view used by visitors and trainers."""
     st.markdown(f'<div class="eyebrow">{html.escape(trainer["gym"])}</div>', unsafe_allow_html=True)
     st.title(trainer["name"])
@@ -228,6 +340,8 @@ def render_public_profile(trainer):
     st.subheader(" · ".join(trainer["skills"][:3]))
     st.write(f"**{trainer['experience_years']} anni di esperienza**")
     st.write(trainer["bio"])
+    if not show_user_actions:
+        st.caption("Anteprima del profilo pubblico")
     st.divider()
     col1, col2 = st.columns(2)
     with col1:
@@ -251,8 +365,12 @@ def render_public_profile(trainer):
         st.write("**Livelli seguiti**")
         st.write(" · ".join(trainer["levels"]))
     st.divider()
-    if st.button("Sono interessato a questo trainer", type="primary", use_container_width=True):
-        st.success(f"Perfetto! Abbiamo registrato il tuo interesse per {trainer['name']}. In una prossima versione potrai inviare direttamente una richiesta.")
+    if show_user_actions:
+        if st.button("Sono interessato a questo trainer", type="primary", use_container_width=True):
+            st.success(f"Perfetto! Abbiamo registrato il tuo interesse per {trainer['name']}. In una prossima versione potrai inviare direttamente una richiesta.")
+    if notice := st.session_state.pop("review_notice", None):
+        st.success(notice)
+    render_reviews(trainer, show_review_form=show_user_actions)
 
 
 page = st.session_state.page
@@ -374,7 +492,7 @@ elif page == "profilo":
     render_brand()
     if st.button(back_labels.get(origin, "← Torna alla home")):
         go_to(origin if origin in {"risultati", "palestre", "dashboard_trainer"} else "home")
-    render_public_profile(trainer)
+    render_public_profile(trainer, show_user_actions=origin != "dashboard_trainer")
 
 elif page == "palestre":
     render_brand()
@@ -434,6 +552,22 @@ elif page == "dashboard_trainer":
         summary[2].metric("Modalità", len(trainer["modalities"]))
         summary[3].metric("Servizi", len(trainer["services"]))
         summary[4].metric("Competenze", len(trainer["skills"]))
+    trainer_reviews = st.session_state.reviews.get(trainer["name"], [])
+    ratings = review_summary(trainer_reviews)
+    st.markdown("### Valutazione media")
+    if ratings:
+        rating, review_count = st.columns(2)
+        rating.metric("Valutazione media", f'{ratings["overall"]:.1f} / 5')
+        review_count.metric("Recensioni", ratings["count"])
+        with st.expander("Le mie recensioni"):
+            for review in trainer_reviews:
+                st.markdown(f'**{review["user_name"]}** · {review_overall(review):.1f}/5')
+                st.caption(
+                    f'Qualità: {review["service_quality"]}/5 · Professionalità: {review["professionalism"]}/5 · '
+                    f'Comunicazione: {review["communication"]}/5'
+                )
+    else:
+        st.info("Nessuna recensione ancora")
     st.markdown("### Azioni principali")
     edit, public, requests = st.columns(3)
     with edit:
