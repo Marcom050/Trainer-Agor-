@@ -1,6 +1,7 @@
 import copy
 import html
 import unicodedata
+from datetime import datetime
 
 import streamlit as st
 
@@ -113,6 +114,22 @@ DEMO_REVIEWS = {
     ],
 }
 
+DEMO_REQUESTS = [
+    {
+        "id": "demo-1", "trainer_name": "Andrea Conti", "user_name": "Marco",
+        "goal": "Aumento massa muscolare", "service": "Personal training 1:1",
+        "message": "Vorrei capire come impostare un percorso di forza e massa.",
+        "status": "Nuova", "created_at": "2026-01-02T10:00:00", "demo": True,
+    },
+    {
+        "id": "demo-2", "trainer_name": "Giulia Rossi", "user_name": "Elena",
+        "goal": "Dimagrimento", "service": "Percorso introduttivo",
+        "message": "Cerco un percorso graduale per ricominciare ad allenarmi.",
+        "status": "Da ricontattare", "created_at": "2026-01-01T16:30:00", "demo": True,
+    },
+]
+REQUEST_STATUSES = ["Nuova", "Da ricontattare", "Contattato"]
+
 # Keep the source data immutable: trainer edits live only for the current
 # Streamlit session and are automatically discarded when that session ends.
 if "trainer_profiles" not in st.session_state:
@@ -120,6 +137,8 @@ if "trainer_profiles" not in st.session_state:
 TRAINERS = st.session_state.trainer_profiles
 if "reviews" not in st.session_state:
     st.session_state.reviews = copy.deepcopy(DEMO_REVIEWS)
+if "requests" not in st.session_state:
+    st.session_state.requests = copy.deepcopy(DEMO_REQUESTS)
 
 GYMS = list(dict.fromkeys(trainer["gym"] for trainer in TRAINERS))
 GOALS = ["Aumento massa muscolare", "Dimagrimento", "Forza", "Benessere generale", "Mobilità e postura"]
@@ -266,6 +285,27 @@ def save_review(trainer_name, user_name, service_quality, professionalism, commu
     return False
 
 
+def save_request(trainer_name, user_name, goal, service, message):
+    """Save a visitor request in the current session and return its id."""
+    next_number = st.session_state.get("next_request_number", 1)
+    request_id = f"session-{next_number}"
+    st.session_state.next_request_number = next_number + 1
+    st.session_state.requests.append({
+        "id": request_id, "trainer_name": trainer_name, "user_name": user_name.strip(),
+        "goal": goal, "service": service, "message": message.strip(), "status": "Nuova",
+        "created_at": datetime.now().isoformat(timespec="microseconds"), "demo": False,
+    })
+    return request_id
+
+
+def requests_for(trainer_name):
+    """Return only one trainer's requests, newest first."""
+    return sorted(
+        (request for request in st.session_state.requests if request["trainer_name"] == trainer_name),
+        key=lambda request: request["created_at"], reverse=True,
+    )
+
+
 def card_markup(trainer, detailed=False):
     skills = "".join(f'<span class="tag">{html.escape(skill)}</span>' for skill in trainer["skills"][:3])
     bio = f"<p>{html.escape(trainer['bio'])}</p>" if detailed else ""
@@ -366,8 +406,33 @@ def render_public_profile(trainer, show_user_actions=True):
         st.write(" · ".join(trainer["levels"]))
     st.divider()
     if show_user_actions:
-        if st.button("Sono interessato a questo trainer", type="primary", use_container_width=True):
-            st.success(f"Perfetto! Abbiamo registrato il tuo interesse per {trainer['name']}. In una prossima versione potrai inviare direttamente una richiesta.")
+        notice = st.session_state.pop("request_notice", None)
+        if notice and notice[0] == trainer["name"]:
+            recipient_preposition = "ad" if trainer["name"][0].lower() in "aeiou" else "a"
+            st.success(f"Richiesta inviata {recipient_preposition} {trainer['name']}.")
+            st.write("Nella versione completa il trainer potrà ricontattarti tramite Trainer Agorà.")
+        form_key = f'request_form_open_{trainer["name"]}'
+        if not st.session_state.get(form_key, False):
+            if st.button("Sono interessato a questo trainer", type="primary", use_container_width=True):
+                st.session_state[form_key] = True
+                st.rerun()
+        else:
+            st.subheader("Invia una richiesta di contatto")
+            st.caption("Racconta brevemente al trainer che tipo di supporto stai cercando.")
+            with st.form(f'contact_request_{trainer["name"]}', clear_on_submit=True):
+                user_name = st.text_input("Il tuo nome", placeholder="Nome")
+                goal = st.selectbox("Obiettivo", GOALS)
+                service = st.selectbox("Servizio di interesse", trainer["services"])
+                message = st.text_area("Messaggio opzionale", placeholder="Aggiungi qualche dettaglio utile")
+                submitted = st.form_submit_button("Invia richiesta", type="primary", use_container_width=True)
+            if submitted:
+                if not user_name.strip():
+                    st.error("Inserisci il tuo nome per inviare la richiesta.")
+                else:
+                    save_request(trainer["name"], user_name, goal, service, message)
+                    st.session_state[form_key] = False
+                    st.session_state.request_notice = (trainer["name"], True)
+                    st.rerun()
     if notice := st.session_state.pop("review_notice", None):
         st.success(notice)
     render_reviews(trainer, show_review_form=show_user_actions)
@@ -568,6 +633,12 @@ elif page == "dashboard_trainer":
                 )
     else:
         st.info("Nessuna recensione ancora")
+    trainer_requests = requests_for(trainer["name"])
+    new_requests = sum(request["status"] == "Nuova" for request in trainer_requests)
+    st.markdown("### Richieste ricevute")
+    total_metric, new_metric = st.columns(2)
+    total_metric.metric("Richieste ricevute", len(trainer_requests))
+    new_metric.metric("Nuove", new_requests)
     st.markdown("### Azioni principali")
     edit, public, requests = st.columns(3)
     with edit:
@@ -622,22 +693,27 @@ elif page == "richieste_trainer":
         go_to("dashboard_trainer")
     st.markdown('<div class="eyebrow">Area Trainer</div>', unsafe_allow_html=True)
     st.title("Richieste ricevute")
-    st.caption("Dati dimostrativi, disponibili solo in memoria.")
-    demo_requests = {
-        "Andrea Conti": [
-            ("Marco", "Personal training 1:1", "Aumento massa muscolare", "Nuova"),
-            ("Luca", "Scheda personalizzata", "Forza", "Da ricontattare"),
-        ]
-    }
-    requests = demo_requests.get(trainer["name"], [])
+    st.caption("Le richieste restano disponibili solo durante questa sessione. Alcuni contenuti iniziali sono dimostrativi.")
+    requests = requests_for(trainer["name"])
     if not requests:
-        st.info("Non hai ancora ricevuto richieste. Le nuove richieste compariranno qui.")
-    for person, service, goal, status in requests:
+        st.info("Nessuna richiesta ricevuta al momento. Quando una persona sarà interessata ai tuoi servizi, la sua richiesta comparirà qui.")
+    for request in requests:
         with st.container(border=True):
-            st.subheader(person)
-            st.write(f"**Interessato a:** {service}")
-            st.write(f"**Obiettivo:** {goal}")
-            st.caption(f"Stato: {status}")
+            heading, state = st.columns([3, 2])
+            with heading:
+                st.subheader(request["user_name"])
+                st.write(f'**Obiettivo:** {request["goal"]}  \n**Servizio:** {request["service"]}')
+                if request["message"]:
+                    st.write(request["message"])
+                if request.get("demo"):
+                    st.caption("Contenuto dimostrativo beta")
+            with state:
+                selected_status = st.selectbox(
+                    "Stato", REQUEST_STATUSES, index=REQUEST_STATUSES.index(request["status"]),
+                    key=f'request_status_{request["id"]}',
+                )
+                if selected_status != request["status"]:
+                    request["status"] = selected_status
 
 else:
     st.session_state.page = "home"
