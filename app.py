@@ -211,21 +211,42 @@ DEMO_REQUESTS = [
     },
 ]
 REQUEST_STATUSES = ["Nuova", "Da ricontattare", "Contattato"]
+DEMO_DATA_VERSION = 2
 
-# Keep the source data immutable: trainer edits live only for the current
-# Streamlit session and are automatically discarded when that session ends.
-if "trainer_profiles" not in st.session_state:
+# Refresh demo-backed state once when its schema or source data changes. This
+# also keeps the source data immutable while preserving edits on normal reruns.
+if st.session_state.get("demo_data_version") != DEMO_DATA_VERSION:
     st.session_state.trainer_profiles = copy.deepcopy(TRAINERS)
-TRAINERS = st.session_state.trainer_profiles
-if "reviews" not in st.session_state:
     st.session_state.reviews = copy.deepcopy(DEMO_REVIEWS)
-if "requests" not in st.session_state:
     st.session_state.requests = copy.deepcopy(DEMO_REQUESTS)
+    st.session_state.answers = {}
+    for stale_key in (
+        "selected_trainer",
+        "profile_origin",
+        "logged_trainer",
+        "selected_gym",
+        "admin_gym_filter",
+        "next_request_number",
+        "profile_saved",
+        "request_notice",
+        "review_notice",
+        "scroll_to_top",
+    ):
+        st.session_state.pop(stale_key, None)
+    st.session_state.page = "home"
+    st.session_state.demo_data_version = DEMO_DATA_VERSION
+
+TRAINERS = st.session_state.trainer_profiles
 
 GOALS = ["Aumento massa muscolare", "Dimagrimento", "Forza", "Benessere generale", "Mobilità e postura"]
 LEVELS = ["Principiante", "Intermedio", "Avanzato"]
 SUPPORT_TYPES = ["Programmazione strutturata", "Motivazione e costanza", "Guida tecnica continua"]
 TIME_SLOTS = ["Prima delle 9", "9–13", "13–18", "18–21"]
+
+
+def valid_option(value, options):
+    """Return a persisted value only while it remains a valid widget option."""
+    return value if value in options else options[0]
 
 
 st.markdown(
@@ -702,11 +723,16 @@ elif page == "questionario":
     st.write("Dicci cosa cerchi: confronteremo le tue preferenze con i profili GreenTheory.")
     answers = st.session_state.answers
     with st.form("questionario"):
-        goal = st.selectbox("1. Obiettivo principale", GOALS, index=GOALS.index(answers.get("goal", GOALS[0])))
-        level = st.segmented_control("2. Il tuo livello", LEVELS, default=answers.get("level", LEVELS[0]), selection_mode="single")
-        gym = st.selectbox("3. GreenTheory frequentata", GYMS, index=GYMS.index(answers.get("gym", GYMS[0])))
-        support = st.selectbox("4. Supporto desiderato", SUPPORT_TYPES, index=SUPPORT_TYPES.index(answers.get("support", SUPPORT_TYPES[0])))
-        time = st.segmented_control("5. Fascia oraria preferita", TIME_SLOTS, default=answers.get("time", TIME_SLOTS[0]), selection_mode="single")
+        saved_goal = valid_option(answers.get("goal"), GOALS)
+        saved_level = valid_option(answers.get("level"), LEVELS)
+        saved_gym = valid_option(answers.get("gym"), GYMS)
+        saved_support = valid_option(answers.get("support"), SUPPORT_TYPES)
+        saved_time = valid_option(answers.get("time"), TIME_SLOTS)
+        goal = st.selectbox("1. Obiettivo principale", GOALS, index=GOALS.index(saved_goal))
+        level = st.segmented_control("2. Il tuo livello", LEVELS, default=saved_level, selection_mode="single")
+        gym = st.selectbox("3. GreenTheory frequentata", GYMS, index=GYMS.index(saved_gym))
+        support = st.selectbox("4. Supporto desiderato", SUPPORT_TYPES, index=SUPPORT_TYPES.index(saved_support))
+        time = st.segmented_control("5. Fascia oraria preferita", TIME_SLOTS, default=saved_time, selection_mode="single")
         submitted = st.form_submit_button("Mostrami i trainer compatibili", type="primary", use_container_width=True)
     if submitted:
         st.session_state.answers = {"goal": goal, "level": level, "gym": gym, "support": support, "time": time}
@@ -765,6 +791,7 @@ elif page == "palestre":
     st.markdown('<div class="eyebrow">La community vicino a te</div>', unsafe_allow_html=True)
     st.title("Esplora le palestre")
     st.write("Seleziona una sede GreenTheory per vedere subito tutti i professionisti che operano lì.")
+    st.session_state.selected_gym = valid_option(st.session_state.get("selected_gym"), GYMS)
     selected_gym = st.selectbox("Scegli una palestra", GYMS, key="selected_gym")
     st.caption(GYM_ADDRESSES[selected_gym])
     gym_trainers = [trainer for trainer in TRAINERS if trainer["gym"] == selected_gym]
@@ -797,6 +824,7 @@ elif page == "area_greentheory":
     st.caption("Vista dimostrativa con dati aggregati della sessione.")
 
     gym_options = ["Tutte le palestre"] + list(dict.fromkeys(trainer["gym"] for trainer in TRAINERS))
+    st.session_state.admin_gym_filter = valid_option(st.session_state.get("admin_gym_filter"), gym_options)
     selected_gym = st.selectbox("Filtra per palestra", gym_options, key="admin_gym_filter")
     filtered_trainers = (
         TRAINERS if selected_gym == "Tutte le palestre"
@@ -932,8 +960,9 @@ elif page == "richieste_trainer":
                 if request.get("demo"):
                     st.caption("Contenuto dimostrativo beta")
             with state:
+                saved_status = valid_option(request.get("status"), REQUEST_STATUSES)
                 selected_status = st.selectbox(
-                    "Stato", REQUEST_STATUSES, index=REQUEST_STATUSES.index(request["status"]),
+                    "Stato", REQUEST_STATUSES, index=REQUEST_STATUSES.index(saved_status),
                     key=f'request_status_{request["id"]}',
                 )
                 if selected_status != request["status"]:
