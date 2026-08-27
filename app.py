@@ -14,11 +14,28 @@ st.set_page_config(
 )
 
 
+# The five real GreenTheory locations used consistently by filters and matching.
+GYMS = [
+    "GreenTheory Attico · Massa",
+    "GreenTheory Tempio · Massa",
+    "GreenTheory Mecca · Livorno",
+    "GreenTheory Hangar · Carrara",
+    "GreenTheory Santo Stefano",
+]
+GYM_ADDRESSES = {
+    GYMS[0]: "Via Carducci 20, 54100 Massa (MS)",
+    GYMS[1]: "Via Dorsale 10, 54100 Massa (MS)",
+    GYMS[2]: "Via dei Ramai 4, 57121 Livorno (LI)",
+    GYMS[3]: "Via Provinciale Nazzano 18, 54033 Carrara (MS)",
+    GYMS[4]: "Via Pratolino 26, 19037 Santo Stefano di Magra (SP)",
+}
+
 # All demo content lives here so every screen renders the same trainer information.
 TRAINERS = [
     {
         "name": "Luca Bianchi",
-        "gym": "GreenTheory Milano Centrale",
+        "age": 31,
+        "gym": GYMS[0],
         "experience_years": 7,
         "bio": "Aiuto chi vuole costruire massa e forza con una programmazione progressiva, precisa e sostenibile.",
         "skills": ["Ipertrofia", "Forza", "Bodybuilding", "Tecnica dei fondamentali"],
@@ -31,7 +48,8 @@ TRAINERS = [
     },
     {
         "name": "Giulia Rossi",
-        "gym": "GreenTheory Monza",
+        "age": 29,
+        "gym": GYMS[2],
         "experience_years": 5,
         "bio": "Creo percorsi accessibili per dimagrire, ritrovare energia e trasformare l'allenamento in un'abitudine duratura.",
         "skills": ["Ricomposizione corporea", "Dimagrimento", "Allenamento principianti"],
@@ -44,7 +62,8 @@ TRAINERS = [
     },
     {
         "name": "Andrea Conti",
-        "gym": "GreenTheory Monza",
+        "age": 34,
+        "gym": GYMS[1],
         "experience_years": 8,
         "bio": "Unisco preparazione atletica e strength training per rendere ogni progresso misurabile, dal gesto tecnico alla performance.",
         "skills": ["Forza", "Ipertrofia", "Preparazione atletica", "Tecnica degli esercizi"],
@@ -57,7 +76,8 @@ TRAINERS = [
     },
     {
         "name": "Martina Ferri",
-        "gym": "GreenTheory Milano Porta Romana",
+        "age": 32,
+        "gym": GYMS[4],
         "experience_years": 6,
         "bio": "Accompagno le persone verso un movimento più libero e consapevole, con attenzione a postura, mobilità e qualità della vita.",
         "skills": ["Mobilità", "Postura", "Core training", "Recupero funzionale"],
@@ -70,7 +90,8 @@ TRAINERS = [
     },
     {
         "name": "Federico Sala",
-        "gym": "GreenTheory Milano Centrale",
+        "age": 38,
+        "gym": GYMS[3],
         "experience_years": 9,
         "bio": "Lavoro con atleti e appassionati esperti su forza massimale, ipertrofia e preparazione mirata agli obiettivi.",
         "skills": ["Strength training", "Powerlifting", "Ipertrofia", "Performance"],
@@ -83,7 +104,8 @@ TRAINERS = [
     },
     {
         "name": "Sara Romano",
-        "gym": "GreenTheory Monza",
+        "age": 27,
+        "gym": GYMS[2],
         "experience_years": 4,
         "bio": "Rendo il movimento piacevole e concreto attraverso functional training, mobilità e percorsi costruiti sul ritmo della persona.",
         "skills": ["Functional training", "Mobilità", "Postura", "Circuit training"],
@@ -93,6 +115,51 @@ TRAINERS = [
         "support": ["Motivazione e costanza", "Guida tecnica continua"],
         "availability": ["Prima delle 9", "9–13"],
         "modalities": ["In presenza"],
+    },
+    {
+        "name": "Matteo Rinaldi", "age": 30, "gym": GYMS[0], "experience_years": 6,
+        "bio": "Curo tecnica e progressione per percorsi di ipertrofia e bodybuilding costruiti con metodo e continuità.",
+        "skills": ["Ipertrofia", "Bodybuilding", "Ricomposizione corporea", "Tecnica esercizi"],
+        "goals": ["Aumento massa muscolare", "Forza"], "levels": ["Intermedio", "Avanzato"],
+        "services": ["Personal training 1:1", "Scheda personalizzata", "Analisi tecnica video"],
+        "support": ["Programmazione strutturata", "Guida tecnica continua"],
+        "availability": ["Prima delle 9", "18–21"], "modalities": ["In presenza", "Online"],
+    },
+    {
+        "name": "Elena Guidi", "age": 35, "gym": GYMS[1], "experience_years": 10,
+        "bio": "Creo percorsi graduali e concreti dedicati a ricomposizione, mobilità e allenamento femminile.",
+        "skills": ["Dimagrimento", "Ricomposizione corporea", "Allenamento femminile", "Mobilità"],
+        "goals": ["Dimagrimento", "Benessere generale", "Mobilità e postura"], "levels": ["Principiante", "Intermedio"],
+        "services": ["Personal training 1:1", "Percorso introduttivo", "Monitoraggio progressi"],
+        "support": ["Motivazione e costanza", "Guida tecnica continua"],
+        "availability": ["9–13", "18–21"], "modalities": ["In presenza", "Online"],
+    },
+    {
+        "name": "Davide Moretti", "age": 28, "gym": GYMS[2], "experience_years": 5,
+        "bio": "Seguo appassionati di forza con attenzione alla tecnica dei fondamentali e a progressioni sostenibili.",
+        "skills": ["Forza", "Powerlifting", "Ipertrofia", "Tecnica fondamentali"],
+        "goals": ["Forza", "Aumento massa muscolare"], "levels": ["Intermedio", "Avanzato"],
+        "services": ["Personal training 1:1", "Analisi tecnica video", "Programmazione periodizzata"],
+        "support": ["Programmazione strutturata", "Guida tecnica continua"],
+        "availability": ["13–18", "18–21"], "modalities": ["In presenza"],
+    },
+    {
+        "name": "Chiara Neri", "age": 33, "gym": GYMS[4], "experience_years": 8,
+        "bio": "Propongo allenamenti funzionali accessibili per migliorare mobilità, controllo del core e benessere quotidiano.",
+        "skills": ["Functional training", "Mobilità", "Benessere", "Core training"],
+        "goals": ["Benessere generale", "Mobilità e postura", "Dimagrimento"], "levels": ["Principiante", "Intermedio"],
+        "services": ["Personal training", "Sessioni di mobilità", "Piccoli gruppi"],
+        "support": ["Motivazione e costanza", "Guida tecnica continua"],
+        "availability": ["9–13", "13–18"], "modalities": ["In presenza", "Online"],
+    },
+    {
+        "name": "Simone Galli", "age": 40, "gym": GYMS[3], "experience_years": 14,
+        "bio": "Alleno forza e performance con programmi progressivi rivolti a sportivi e appassionati esperti.",
+        "skills": ["Preparazione atletica", "Forza", "Performance", "Recupero funzionale"],
+        "goals": ["Forza", "Benessere generale"], "levels": ["Intermedio", "Avanzato"],
+        "services": ["Personal training 1:1", "Test di performance", "Programmazione periodizzata"],
+        "support": ["Programmazione strutturata", "Guida tecnica continua"],
+        "availability": ["Prima delle 9", "13–18"], "modalities": ["In presenza"],
     },
 ]
 
@@ -111,6 +178,21 @@ DEMO_REVIEWS = {
     "Andrea Conti": [
         {"user_name": "Simone", "service_quality": 4, "professionalism": 5, "communication": 4, "demo": True},
         {"user_name": "Alessia", "service_quality": 5, "professionalism": 5, "communication": 4, "demo": True},
+    ],
+    "Matteo Rinaldi": [
+        {"user_name": "Irene", "service_quality": 4, "professionalism": 5, "communication": 4, "demo": True},
+    ],
+    "Elena Guidi": [
+        {"user_name": "Laura", "service_quality": 5, "professionalism": 4, "communication": 5, "demo": True},
+    ],
+    "Davide Moretti": [
+        {"user_name": "Tommaso", "service_quality": 4, "professionalism": 5, "communication": 4, "demo": True},
+    ],
+    "Chiara Neri": [
+        {"user_name": "Anna", "service_quality": 4, "professionalism": 4, "communication": 5, "demo": True},
+    ],
+    "Simone Galli": [
+        {"user_name": "Pietro", "service_quality": 5, "professionalism": 5, "communication": 4, "demo": True},
     ],
 }
 
@@ -140,7 +222,6 @@ if "reviews" not in st.session_state:
 if "requests" not in st.session_state:
     st.session_state.requests = copy.deepcopy(DEMO_REQUESTS)
 
-GYMS = list(dict.fromkeys(trainer["gym"] for trainer in TRAINERS))
 GOALS = ["Aumento massa muscolare", "Dimagrimento", "Forza", "Benessere generale", "Mobilità e postura"]
 LEVELS = ["Principiante", "Intermedio", "Avanzato"]
 SUPPORT_TYPES = ["Programmazione strutturata", "Motivazione e costanza", "Guida tecnica continua"]
@@ -514,7 +595,7 @@ def render_public_profile(trainer, show_user_actions=True):
         f'''<section class="profile-hero"><div class="profile-title">{avatar_markup(trainer, large=True)}<div>
         <div class="eyebrow">Professionista verificato</div><h1>{html.escape(trainer["name"])}</h1>
         <div>{html.escape(trainer["gym"])}</div></div></div>
-        <div class="profile-meta">{trainer['experience_years']} anni di esperienza · {html.escape(" · ".join(trainer["modalities"]))} &nbsp; | &nbsp; <strong>{rating}</strong></div></section>''',
+        <div class="profile-meta">{trainer['age']} anni · {trainer['experience_years']} anni di esperienza · {html.escape(" + ".join(trainer["modalities"]))} &nbsp; | &nbsp; <strong>{rating}</strong></div></section>''',
         unsafe_allow_html=True,
     )
     st.subheader("Il mio approccio")
@@ -594,7 +675,7 @@ if page == "home":
     st.markdown("### Trova un trainer")
     query = st.text_input(
         "Cerca per nome, palestra, competenza, obiettivo, servizio o modalità",
-        placeholder="Es. Andrea, Monza, mobilità, ipertrofia, online…",
+        placeholder="Es. Andrea, Massa, mobilità, ipertrofia, online…",
     )
     if query.strip():
         matches = search_trainers(query)
@@ -685,6 +766,7 @@ elif page == "palestre":
     st.title("Esplora le palestre")
     st.write("Seleziona una sede GreenTheory per vedere subito tutti i professionisti che operano lì.")
     selected_gym = st.selectbox("Scegli una palestra", GYMS, key="selected_gym")
+    st.caption(GYM_ADDRESSES[selected_gym])
     gym_trainers = [trainer for trainer in TRAINERS if trainer["gym"] == selected_gym]
     st.subheader(f"{len(gym_trainers)} professionisti a {selected_gym.replace('GreenTheory ', '')}")
     for trainer in gym_trainers:
@@ -756,7 +838,7 @@ elif page == "dashboard_trainer":
         )
         completion = "Profilo completo" if profile_is_complete(trainer) else "Profilo da completare"
         st.markdown(f'<span class="verified">Professionista verificato</span> &nbsp; <strong>{completion}</strong>', unsafe_allow_html=True)
-        st.caption(f'{trainer["experience_years"]} anni di esperienza · {" · ".join(trainer["modalities"])}')
+        st.caption(f'{trainer["age"]} anni · {trainer["experience_years"]} anni di esperienza · {" + ".join(trainer["modalities"])}')
     with home:
         if st.button("Torna alla Home", use_container_width=True):
             go_to("home")
@@ -809,6 +891,7 @@ elif page == "modifica_trainer":
         bio = st.text_area("Bio", value=trainer["bio"], height=130)
         gym_options = list(dict.fromkeys(GYMS + [profile["gym"] for profile in TRAINERS]))
         gym = st.selectbox("Palestra", gym_options, index=gym_options.index(trainer["gym"]))
+        age = st.number_input("Età", min_value=18, max_value=80, value=trainer["age"], step=1)
         experience = st.number_input("Anni di esperienza", min_value=0, max_value=50, value=trainer["experience_years"], step=1)
         skills = st.multiselect("Competenze", choices("skills", []), default=trainer["skills"], accept_new_options=True)
         goals = st.multiselect("Obiettivi seguiti", choices("goals", GOALS), default=trainer["goals"])
@@ -819,7 +902,7 @@ elif page == "modifica_trainer":
         modalities = st.multiselect("Modalità", ["In presenza", "Online"], default=trainer["modalities"])
         submitted = st.form_submit_button("Salva modifiche", type="primary", use_container_width=True)
     if submitted:
-        trainer.update({"bio": bio.strip(), "gym": gym, "experience_years": int(experience), "skills": skills,
+        trainer.update({"bio": bio.strip(), "gym": gym, "age": int(age), "experience_years": int(experience), "skills": skills,
                         "goals": goals, "levels": levels, "services": services, "support": support,
                         "availability": availability, "modalities": modalities})
         st.session_state.profile_saved = True
